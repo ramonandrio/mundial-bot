@@ -125,9 +125,11 @@ if not message:
 
 
 # --- Enlaces a los resúmenes de DAZN (descubrimiento + validación en Python) ---
-# Buscamos en YouTube el resumen de cada partido de AYER y validamos vía oEmbed que
-# es un vídeo real de DAZN del partido correcto. Nunca se inventa una URL ni se bloquea
-# el envío: si algo falla, el partido simplemente va sin enlace.
+# Para cada partido de AYER buscamos su resumen en YouTube y validamos que es un vídeo
+# de DAZN del partido correcto (autor DAZN, título de highlight y ambos equipos en él).
+# Vía principal: API oficial de YouTube (YOUTUBE_API_KEY). Respaldo: scraping + oEmbed.
+# Nunca se inventa una URL ni se bloquea el envío: si algo falla, el partido va sin enlace.
+YT_API_KEY = os.environ.get("YOUTUBE_API_KEY", "").strip()
 SOCS = "CAISEwgDEgk0ODE3Nzk3MjQaAmVuIAEaBgiA_LyaBg"  # cookie para esquivar el muro de consentimiento
 UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36"
 
@@ -138,6 +140,28 @@ def _norm(s):
 
 def _tokens(team):
     return [t for t in re.split(r"[^a-z]+", _norm(team)) if len(t) >= 4]
+
+
+def _api_search(query):
+    """Candidatos vía API oficial de YouTube: lista de {id, title, author}."""
+    if not YT_API_KEY:
+        return []
+    try:
+        r = requests.get("https://www.googleapis.com/youtube/v3/search",
+                         params={"key": YT_API_KEY, "part": "snippet", "q": query,
+                                 "type": "video", "maxResults": 8}, timeout=15)
+        if r.status_code != 200:
+            return []
+        out = []
+        for it in r.json().get("items", []):
+            vid = it.get("id", {}).get("videoId")
+            sn = it.get("snippet", {})
+            if vid:
+                out.append({"id": vid, "title": sn.get("title", ""),
+                            "author": sn.get("channelTitle", "")})
+        return out
+    except Exception:
+        return []
 
 
 _oembed_cache = {}
@@ -159,40 +183,42 @@ def _oembed(video_id):
     return data
 
 
-def youtube_search_ids(query):
-    """IDs de vídeo (sin duplicar, en orden) de una búsqueda en YouTube."""
+def _scrape_search(query):
+    """Respaldo sin API key: IDs del HTML de búsqueda, enriquecidos con oEmbed."""
+    ids, seen = [], set()
     try:
         r = requests.get("https://www.youtube.com/results",
                          params={"search_query": query},
                          headers={"Cookie": f"SOCS={SOCS}", "Accept-Language": "es",
                                   "User-Agent": UA}, timeout=15)
-        ids = re.findall(r'"videoId":"([A-Za-z0-9_-]{11})"', r.text)
+        for vid in re.findall(r'"videoId":"([A-Za-z0-9_-]{11})"', r.text):
+            if vid not in seen:
+                seen.add(vid)
+                ids.append(vid)
     except Exception:
         return []
-    seen, out = set(), []
-    for vid in ids:
-        if vid not in seen:
-            seen.add(vid)
-            out.append(vid)
-    return out[:8]
+    out = []
+    for vid in ids[:8]:
+        data = _oembed(vid)
+        if data:
+            out.append({"id": vid, "title": data.get("title", ""),
+                        "author": data.get("author_name", "")})
+    return out
 
 
 def find_highlight(team1, team2):
-    """URL del resumen DAZN del partido, o None. Coge el primer candidato de la
-    búsqueda cuyo vídeo (vía oEmbed) sea de DAZN, sea un highlight y mencione a ambos
-    equipos en el título."""
+    """URL del resumen DAZN del partido, o None. Primer candidato de DAZN cuyo título sea
+    un highlight y mencione a ambos equipos. Usa la API; si no hay/falla, el scraper."""
     t1, t2 = _tokens(team1), _tokens(team2)
     if not t1 or not t2:
         return None
     query = f"{team1} vs {team2} resumen y goles Copa Mundial 2026 DAZN"
-    for vid in youtube_search_ids(query):
-        data = _oembed(vid)
-        if not data:
-            continue
-        author, title = _norm(data.get("author_name", "")), _norm(data.get("title", ""))
+    cands = _api_search(query) or _scrape_search(query)
+    for c in cands:
+        author, title = _norm(c["author"]), _norm(c["title"])
         if "dazn" in author and ("resumen" in title or "highlights" in title) \
                 and any(t in title for t in t1) and any(t in title for t in t2):
-            return f"https://www.youtube.com/watch?v={vid}"
+            return f"https://www.youtube.com/watch?v={c['id']}"
     return None
 
 
