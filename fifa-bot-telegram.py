@@ -202,7 +202,8 @@ def add_highlights(text):
     added = 0
     out = []
     for block in text.split("\n\n"):
-        m = re.search(r"<b>(.+?)\s+\d{1,2}-\d{1,2}\s+(.+?)</b>", block)
+        # Marcador: dígitos con guion, tolerando espacios y guion largo (2-0, 4 - 0, 1–1).
+        m = re.search(r"<b>(.+?)\s+\d{1,2}\s*[-–—]\s*\d{1,2}\s+(.+?)</b>", block)
         if m:
             url = find_highlight(m.group(1), m.group(2))
             if url:
