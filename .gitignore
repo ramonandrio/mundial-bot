@@ -1,0 +1,11 @@
+# Secretos: nunca subir el .env real (sí la plantilla .example)
+fifa-bot.env
+*.env
+!*.env.example
+
+# Logs del job y del bridge
+*.log
+
+# Sesión de WhatsApp por si alguna vez vive aquí
+*.db
+store/
