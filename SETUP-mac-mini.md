@@ -1,73 +1,57 @@
-# Montaje en el Mac mini (host siempre encendido)
+# Despliegue del bot (host siempre encendido)
 
-El bot corre 100% en local. El Mac mini, al estar siempre encendido, es el host ideal:
-el bridge de WhatsApp y el job diario viven ahí y no dependen de tu portátil de empresa.
-
-Haz TODO esto **en el Mac mini** (puedes entrar por SSH desde el portátil: `ssh usuario@ip-del-mini`;
-el QR de WhatsApp se dibuja en la propia terminal, así que funciona por SSH).
+El bot publica solo cada mañana. Necesita una máquina encendida a esa hora (un Mac de
+sobremesa, un mini, lo que sea). Estos son los pasos para dejarlo corriendo.
 
 ## 1. Prerrequisitos
 
 ```bash
-# Homebrew (si no está): https://brew.sh
-brew install go
-curl -LsSf https://astral.sh/uv/install.sh | sh        # instala uv
+# uv (gestor de Python). Si no está:
+curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
+
+No hace falta instalar nada más: el script declara sus dependencias en línea y `uv` las
+resuelve solo.
 
 ## 2. Traer el código
 
 ```bash
-mkdir -p ~/code && cd ~/code
-git clone https://github.com/lharries/whatsapp-mcp.git
+mkdir -p ~/.claude && git clone https://github.com/ramonandrio/mundial-bot.git ~/.claude/jobs
 ```
 
-Copia la carpeta de scripts desde el portátil (AirDrop, scp o repo privado). Deben quedar en
-`~/.claude/jobs/` del mini estos ficheros:
-`fifa-bot-anthropic.py`, `fifa-bot-openai.py`, `fifa-bot.sh`, `fifa-bot.env.example`,
-`install-mac-mini.sh`, `.gitignore`.
-
-NO copies `fifa-bot.env` por canales inseguros: recréalo en el mini (paso 4).
-
-## 3. Compilar y autenticar el bridge (QR)
-
-```bash
-cd ~/code/whatsapp-mcp/whatsapp-bridge
-go build -o whatsapp-bridge .
-./whatsapp-bridge        # imprime un QR: WhatsApp > Dispositivos vinculados > escanéalo
-```
-
-Cuando veas que conecta y sincroniza, corta con Ctrl+C (el LaunchAgent del paso 5 lo relanzará solo;
-la sesión queda guardada en store/).
-
-## 4. Crear el .env con tu API key (en el mini)
+## 3. Configurar el .env (claves y destino)
 
 ```bash
 cp ~/.claude/jobs/fifa-bot.env.example ~/.claude/jobs/fifa-bot.env
 nano ~/.claude/jobs/fifa-bot.env
 ```
 
-Rellena `BOT_PROVIDER=anthropic`, `FIFA_BOT_RECIPIENT=TU_NUMERO`, `ANTHROPIC_API_KEY=sk-ant-...`.
+Rellena:
+- `BOT_SCRIPT=fifa-bot-telegram.py`
+- `TELEGRAM_CHAT_ID=` tu chat o `@canal`
+- `TELEGRAM_BOT_TOKEN=` token de @BotFather
+- `ANTHROPIC_API_KEY=` tu clave de Anthropic
+- `YOUTUBE_API_KEY=` tu clave de YouTube Data API v3
 
-## 5. Instalar los LaunchAgents
+El `.env` no se versiona (está en `.gitignore`): vive solo en cada máquina.
+
+## 4. Instalar el envío diario
 
 ```bash
-bash ~/.claude/jobs/install-mac-mini.sh 9 0      # envío diario a las 09:00
+bash ~/.claude/jobs/install-mac-mini.sh 7 30      # hora del envío (7:30)
 ```
 
-Genera y carga el LaunchAgent del bridge (siempre vivo) y el del job diario, con las rutas del mini.
-
-## 6. Probar y evitar que se duerma
+## 5. Probar y evitar que se duerma
 
 ```bash
-launchctl start com.ramon.fifabot               # disparo manual de prueba -> te llega el mensaje
-sudo pmset -a sleep 0 disksleep 0 womp 1         # el mini nunca se suspende
+launchctl start com.ramon.fifabot                 # disparo de prueba
+sudo pmset -a sleep 0 disksleep 0 womp 1          # que la máquina no se suspenda
 ```
 
-Logs: `~/.claude/jobs/fifa-bot.out.log` y `fifa-bot.err.log`.
+Logs en `~/.claude/jobs/fifa-bot.out.log` y `fifa-bot.err.log`.
 
 ## Mantenimiento
 
-- La sesión de WhatsApp caduca ~cada 20 días: vuelve a correr `./whatsapp-bridge` y re-escanea el QR.
-- Cambiar la hora del envío: `bash install-mac-mini.sh 8 30` y listo (regenera y recarga).
-- El portátil de empresa ya no pinta nada aquí; puedes borrar de él
-  `~/Library/LaunchAgents/com.ramon.fifabot.plist` (nunca se llegó a cargar).
+- **Desplegar cambios:** se hace `git push` desde donde edites. La máquina hace `git pull`
+  sola antes de cada envío, así que no hay que tocarla.
+- **Cambiar la hora:** `bash install-mac-mini.sh 8 30` (regenera y recarga el job).
