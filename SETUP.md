@@ -31,6 +31,7 @@ Rellena:
 - `TELEGRAM_BOT_TOKEN=` token de @BotFather
 - `ANTHROPIC_API_KEY=` tu clave de Anthropic
 - `YOUTUBE_API_KEY=` tu clave de YouTube Data API v3
+- `FOOTBALL_DATA_KEY=` tu clave de football-data.org (resultados y partidos)
 
 El `.env` no se versiona (está en `.gitignore`): vive solo en cada máquina.
 
