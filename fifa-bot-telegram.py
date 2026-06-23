@@ -48,15 +48,17 @@ hoy = _base.strftime("%A %d de %B de %Y")
 PROMPT = """Eres un bot que prepara el resumen diario del Mundial de fútbol en curso. Hoy es __HOY__ (hora de Madrid, CEST).
 
 Busca en la web y verifica con al menos dos fuentes (web oficial FIFA y un medio deportivo grande):
-1. Resultados de AYER: partidos terminados con marcador final y un dato breve.
-2. Partidos de HOY: enfrentamientos con hora de inicio en CEST y fase/grupo.
-3. Goleadores: top de la tabla de máximos goleadores del torneo.
+1. Próximo partido de ESPAÑA: día, hora en CEST y rival de su siguiente encuentro, más su posición actual en el grupo.
+2. Resultados de AYER: partidos terminados con marcador final y un dato breve.
+3. Partidos de HOY: enfrentamientos con hora de inicio en CEST y fase/grupo.
+4. Goleadores: top de la tabla de máximos goleadores del torneo.
 
 Reglas de datos:
 - Nunca inventes marcadores ni horarios. Da el marcador de ayer solo si está confirmado.
 - La info de clasificación (quién está eliminado, quién se ha clasificado, qué necesita cada selección, contra quién juega en la última jornada) es lo más interesante: inclúyela cuando puedas. Pero ANTES consulta la clasificación real del grupo y el calendario en una fuente, y básate solo en esos datos verificados, no en deducciones de memoria. Si la situación es matemáticamente clara (un equipo ya eliminado o ya clasificado), dilo con seguridad. Si depende de combinaciones o desempates complejos, mantente general ("se juega el pase en la última jornada") sin afirmar detalles que no hayas confirmado. Nunca inventes marcador, rival ni escenario.
 - Si un partido está EN JUEGO ahora mismo (en directo, sin resultado final), NO des marcador parcial ni hables de fuentes ni de incertidumbre. Trátalo como un partido más: di que está en juego y añade un comentario breve de qué se juega cada selección, igual que con los de hoy.
 - Si de un bloque entero no hay datos fiables, omítelo sin más.
+- Bloque de España: indica cuándo juega su PRÓXIMO partido (día de la semana, hora CEST y rival) y su posición actual en el grupo, todo verificado en el calendario y la clasificación reales. Si España juega hoy, dilo ("hoy a las..."). Si España ya está eliminada o ha terminado su participación, dilo en una frase ("España quedó eliminada en...") en vez del próximo partido.
 - Usa el nombre completo del país (Estados Unidos, no EE.UU.; Países Bajos, no Holanda). Esto es importante para emparejar después el resumen en vídeo.
 - No incluyas enlaces de ningún tipo. Los enlaces a los resúmenes se añaden después automáticamente.
 
@@ -64,6 +66,9 @@ FORMATO EXACTO (Telegram HTML). Sigue esta plantilla al pie de la letra: misma e
 
 ⚽ <b>Resumen diario Mundial 2026</b>
 {Fecha de hoy, ej: Sábado 20 de junio de 2026}
+
+🇪🇸 <b>España</b>
+{Juega el {día} a las {hora} CEST contra {rival}. Va {posición, ej: primera} del Grupo {X}.}
 
 ───────────────────
 🗓 <b>Ayer ({día y fecha de ayer, ej: viernes 19 de junio})</b>
