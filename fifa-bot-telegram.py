@@ -51,13 +51,14 @@ Busca en la web y verifica con al menos dos fuentes (web oficial FIFA y un medio
 1. Próximo partido de ESPAÑA: día, hora en CEST y rival de su siguiente encuentro, más su posición actual en el grupo.
 2. Resultados de AYER: partidos terminados con marcador final y un dato breve.
 3. Partidos de HOY: enfrentamientos con hora de inicio en CEST y fase/grupo.
-4. Goleadores: top de la tabla de máximos goleadores del torneo.
+4. Goleadores: la tabla de máximos goleadores ACTUALIZADA a hoy (__HOY__), después de los partidos de ayer. Busca la versión más reciente y verifica al líder y su número de goles con DOS fuentes; no uses tablas de hace días. Ordena de más a menos goles.
 
 Reglas de datos:
 - Nunca inventes marcadores ni horarios. Da el marcador de ayer solo si está confirmado.
 - La info de clasificación (quién está eliminado, quién se ha clasificado, qué necesita cada selección, contra quién juega en la última jornada) es lo más interesante: inclúyela cuando puedas. Pero ANTES consulta la clasificación real del grupo y el calendario en una fuente, y básate solo en esos datos verificados, no en deducciones de memoria. Si la situación es matemáticamente clara (un equipo ya eliminado o ya clasificado), dilo con seguridad. Si depende de combinaciones o desempates complejos, mantente general ("se juega el pase en la última jornada") sin afirmar detalles que no hayas confirmado. Nunca inventes marcador, rival ni escenario.
 - Si un partido está EN JUEGO ahora mismo (en directo, sin resultado final), NO des marcador parcial ni hables de fuentes ni de incertidumbre. Trátalo como un partido más: di que está en juego y añade un comentario breve de qué se juega cada selección, igual que con los de hoy.
 - Si de un bloque entero no hay datos fiables, omítelo sin más.
+- Goleadores: es el dato que más cambia y donde más errores se cometen. El 🥇 es UN solo jugador, el máximo goleador actual con su cifra real de hoy; si dudas del número exacto, verifícalo otra vez antes de escribirlo. Nunca pongas un grupo de jugadores en el 🥇 ni mezcles cifras de días distintos.
 - Bloque de España: EXACTAMENTE dos frases cortas, nada más. Frase 1: cuándo juega su próximo partido (día de la semana y hora CEST) y contra quién. Frase 2: su posición en el grupo ("Va primera del Grupo H"). NO añadas puntos, ni qué necesita, ni cómo llega el rival, ni paréntesis con la madrugada: solo el día y la hora. Todo verificado en calendario y clasificación reales. Si juega hoy, di "hoy a las...". Si España ya está eliminada, una sola frase ("España quedó eliminada en la fase de grupos.").
 - Usa el nombre completo del país (Estados Unidos, no EE.UU.; Países Bajos, no Holanda). Esto es importante para emparejar después el resumen en vídeo.
 - No incluyas enlaces de ningún tipo. Los enlaces a los resúmenes se añaden después automáticamente.
@@ -92,8 +93,9 @@ Grupo {X}. {hora} CEST. {Comentario de 1-2 frases: cómo llega cada selección y
 🥾 <b>Tabla de goleadores</b>
 ───────────────────
 
-🥇 {Jugador} {bandera} · {N} goles — {detalle breve}
-🥈 Con {N} goles: {lista breve de nombres con su bandera}
+🥇 {Máximo goleador: un solo jugador} {bandera} · {N} goles — {detalle breve}
+🥈 Con {N-1} goles: {lista de nombres con su bandera}
+🥉 Con {N-2} goles: {lista de nombres con su bandera}
 
 Reglas de formato:
 - Usa <b>...</b> SOLO donde aparece en la plantilla: título, los tres encabezados de sección y el nombre de cada enfrentamiento. Nada más en negrita.
