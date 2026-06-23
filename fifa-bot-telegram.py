@@ -206,9 +206,16 @@ def _scrape_search(query):
     return out
 
 
-def find_highlight(team1, team2):
-    """URL del resumen DAZN del partido, o None. Primer candidato de DAZN cuyo título sea
-    un highlight y mencione a ambos equipos. Usa la API; si no hay/falla, el scraper."""
+def _score(text):
+    """Marcador normalizado 'x-y' encontrado en el texto, o None."""
+    m = re.search(r"(\d{1,2})\s*[-–—]\s*(\d{1,2})", text)
+    return f"{m.group(1)}-{m.group(2)}" if m else None
+
+
+def find_highlight(team1, team2, score=None):
+    """URL del resumen DAZN del partido, o None. Acepta un candidato de DAZN (highlight)
+    si menciona a ambos equipos, O si menciona a uno y el marcador coincide (cubre
+    variantes de grafía tipo Iraq/Irak, Curazao/Curaçao). Usa la API; respaldo: scraper."""
     t1, t2 = _tokens(team1), _tokens(team2)
     if not t1 or not t2:
         return None
@@ -216,8 +223,11 @@ def find_highlight(team1, team2):
     cands = _api_search(query) or _scrape_search(query)
     for c in cands:
         author, title = _norm(c["author"]), _norm(c["title"])
-        if "dazn" in author and ("resumen" in title or "highlights" in title) \
-                and any(t in title for t in t1) and any(t in title for t in t2):
+        if "dazn" not in author or not ("resumen" in title or "highlights" in title):
+            continue
+        has1, has2 = any(t in title for t in t1), any(t in title for t in t2)
+        score_ok = score is not None and _score(title) == score
+        if (has1 and has2) or ((has1 or has2) and score_ok):
             return f"https://www.youtube.com/watch?v={c['id']}"
     return None
 
@@ -229,9 +239,9 @@ def add_highlights(text):
     out = []
     for block in text.split("\n\n"):
         # Marcador: dígitos con guion, tolerando espacios y guion largo (2-0, 4 - 0, 1–1).
-        m = re.search(r"<b>(.+?)\s+\d{1,2}\s*[-–—]\s*\d{1,2}\s+(.+?)</b>", block)
+        m = re.search(r"<b>(.+?)\s+(\d{1,2})\s*[-–—]\s*(\d{1,2})\s+(.+?)</b>", block)
         if m:
-            url = find_highlight(m.group(1), m.group(2))
+            url = find_highlight(m.group(1), m.group(4), f"{m.group(2)}-{m.group(3)}")
             if url:
                 block = f'{block}\n📺 <a href="{url}">Resumen y goles</a>'
                 added += 1
