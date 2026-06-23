@@ -128,6 +128,41 @@ def fetch_matches():
     return ("\n".join(ayer) or None), ("\n".join(hoy) or None)
 
 
+def fetch_standings():
+    """Clasificación real de todos los grupos desde football-data.org. Devuelve un texto
+    (una línea por grupo) o None si falla. Nombres en inglés (el modelo los traduce)."""
+    key = os.environ.get("FOOTBALL_DATA_KEY", "").strip()
+    if not key:
+        return None
+    try:
+        r = requests.get("https://api.football-data.org/v4/competitions/WC/standings",
+                         headers={"X-Auth-Token": key}, timeout=20)
+        st = r.json().get("standings", [])
+    except Exception:
+        return None
+    lines = []
+    for s in st:
+        rows = s.get("table", [])
+        if not rows:
+            continue
+        partes = []
+        for row in rows:
+            name = (row.get("team") or {}).get("name", "")
+            gd = row.get("goalDifference", 0)
+            partes.append(f"{row.get('position')}º {name} ({row.get('points')} pts, {gd:+d})")
+        lines.append(f"{s.get('group', '')}: " + ", ".join(partes))
+    return "\n".join(lines) or None
+
+
+_standings = fetch_standings()
+if _standings:
+    STANDINGS_SRC = ("Clasificación REAL y actual de los grupos (úsala para la posición de España y "
+                     "para cualquier comentario de clasificación; NO la deduzcas de memoria; traduce "
+                     "los nombres al español):\n" + _standings)
+else:
+    STANDINGS_SRC = ("Consulta la clasificación real de cada grupo en una fuente antes de comentar "
+                     "posiciones o quién se clasifica; no la deduzcas de memoria.")
+
 _ayer, _hoy = fetch_matches()
 if _ayer:
     AYER_SRC = ("Resultados de AYER (lista COMPLETA y verificada; no añadas ni quites partidos, no "
@@ -149,10 +184,11 @@ Busca en la web y verifica con al menos dos fuentes (web oficial FIFA y un medio
 2. __AYER_SRC__
 3. __HOY_SRC__
 4. __GOLEADORES_SRC__
+5. __STANDINGS_SRC__
 
 Reglas de datos:
 - Marcadores y partidos: vienen de una fuente completa y verificada. Úsalos tal cual, no inventes ni cambies ningún resultado ni hora, y no añadas partidos que no estén en las listas.
-- La info de clasificación (quién está eliminado, quién se ha clasificado, qué necesita cada selección, contra quién juega en la última jornada) es lo más interesante: inclúyela cuando puedas. Pero ANTES consulta la clasificación real del grupo y el calendario en una fuente, y básate solo en esos datos verificados, no en deducciones de memoria. Si la situación es matemáticamente clara (un equipo ya eliminado o ya clasificado), dilo con seguridad. Si depende de combinaciones o desempates complejos, mantente general ("se juega el pase en la última jornada") sin afirmar detalles que no hayas confirmado. Nunca inventes marcador, rival ni escenario.
+- La info de clasificación (quién está eliminado o clasificado, qué necesita cada selección) es lo más interesante: inclúyela basándote SOLO en la clasificación real proporcionada arriba y en los partidos ya listados, nunca en memoria. Si la situación es matemáticamente clara (ya eliminado o ya clasificado por puntos), dilo con seguridad. Si depende de combinaciones o desempates, mantente general ("se juega el pase en la última jornada") sin afirmar detalles que no se deduzcan de los datos dados.
 - Si un partido está EN JUEGO ahora mismo (en directo, sin resultado final), NO des marcador parcial ni hables de fuentes ni de incertidumbre. Trátalo como un partido más: di que está en juego y añade un comentario breve de qué se juega cada selección, igual que con los de hoy.
 - Si de un bloque entero no hay datos fiables, omítelo sin más.
 - Goleadores: es el dato que más cambia y donde más errores se cometen. El 🥇 es UN solo jugador, el máximo goleador actual con su cifra real de hoy; si dudas del número exacto, verifícalo otra vez antes de escribirlo. Nunca pongas un grupo de jugadores en el 🥇 ni mezcles cifras de días distintos.
@@ -208,7 +244,8 @@ CRÍTICO: no narres tu proceso ni escribas una sola palabra de explicación. Tu 
 ===MENSAJE===
 (aquí el mensaje)
 ===FIN===""".replace("__HOY__", hoy).replace("__GOLEADORES_SRC__", GOLEADORES_SRC) \
-    .replace("__AYER_SRC__", AYER_SRC).replace("__HOY_SRC__", HOY_SRC)
+    .replace("__AYER_SRC__", AYER_SRC).replace("__HOY_SRC__", HOY_SRC) \
+    .replace("__STANDINGS_SRC__", STANDINGS_SRC)
 
 client = anthropic.Anthropic()  # lee ANTHROPIC_API_KEY del entorno
 resp = client.messages.create(
