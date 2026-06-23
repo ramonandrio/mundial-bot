@@ -12,14 +12,12 @@ JOBS_DIR="$HOME/.claude/jobs"
 git -C "$JOBS_DIR" pull --quiet --ff-only origin main 2>/dev/null || true
 
 # Carga claves y config (créalo a partir de fifa-bot.env.example):
-#   BOT_SCRIPT, TELEGRAM_CHAT_ID, ANTHROPIC_API_KEY / OPENAI_API_KEY,
-#   FIFA_BOT_RECIPIENT (solo WhatsApp), FIFA_BOT_MODEL...
+#   TELEGRAM_CHAT_ID, TELEGRAM_BOT_TOKEN, ANTHROPIC_API_KEY, YOUTUBE_API_KEY, FIFA_BOT_MODEL...
 set -a
 # shellcheck disable=SC1091
 source "$JOBS_DIR/fifa-bot.env"
 
-# Si usamos Telegram y no hay token en el .env, reutiliza el del canal de
-# Claude Code (existe en el portátil; en el mini ponlo en fifa-bot.env).
+# Si no hay token en el .env, reutiliza el del canal de Claude Code (si existe).
 if [ -z "${TELEGRAM_BOT_TOKEN:-}" ] && [ -f "$HOME/.claude/channels/telegram/.env" ]; then
   # shellcheck disable=SC1091
   source "$HOME/.claude/channels/telegram/.env"
@@ -30,6 +28,4 @@ set +a
 # o /usr/local (Intel). Cubrimos los tres.
 export PATH="$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
 
-# Script a ejecutar. Por defecto Telegram. Cambia BOT_SCRIPT en el .env:
-#   fifa-bot-telegram.py | fifa-bot-anthropic.py | fifa-bot-openai.py
-exec uv run "$JOBS_DIR/${BOT_SCRIPT:-fifa-bot-telegram.py}"
+exec uv run "$JOBS_DIR/fifa-bot-telegram.py"

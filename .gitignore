@@ -3,9 +3,5 @@ fifa-bot.env
 *.env
 !*.env.example
 
-# Logs del job y del bridge
+# Logs del job
 *.log
-
-# Sesión de WhatsApp por si alguna vez vive aquí
-*.db
-store/

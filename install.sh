@@ -8,7 +8,7 @@
 # Requisitos previos:
 #   - uv instalado
 #   - ~/.claude/jobs/ con los scripts y fifa-bot.env relleno
-#     (BOT_SCRIPT=fifa-bot-telegram.py, TELEGRAM_CHAT_ID, TELEGRAM_BOT_TOKEN, ANTHROPIC_API_KEY)
+#     (TELEGRAM_CHAT_ID, TELEGRAM_BOT_TOKEN, ANTHROPIC_API_KEY, YOUTUBE_API_KEY)
 set -euo pipefail
 
 HOUR="${1:-7}"

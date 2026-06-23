@@ -7,8 +7,8 @@
 Bot diario del Mundial — canal Telegram (Bot API oficial).
 
 Busca resultados/partidos/goleadores con la tool web_search de Anthropic,
-formatea un mensaje y lo envía con la Bot API de Telegram. Sin bridge, sin QR,
-sin proceso local: solo una llamada HTTPS a api.telegram.org.
+formatea un mensaje y lo envía con la Bot API de Telegram (una llamada HTTPS a
+api.telegram.org, sin servidores intermedios).
 
 Variables de entorno necesarias:
     TELEGRAM_BOT_TOKEN   token del bot (de @BotFather)

@@ -27,7 +27,6 @@ nano ~/.claude/jobs/fifa-bot.env
 ```
 
 Rellena:
-- `BOT_SCRIPT=fifa-bot-telegram.py`
 - `TELEGRAM_CHAT_ID=` tu chat o `@canal`
 - `TELEGRAM_BOT_TOKEN=` token de @BotFather
 - `ANTHROPIC_API_KEY=` tu clave de Anthropic
