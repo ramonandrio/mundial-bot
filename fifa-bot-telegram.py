@@ -45,13 +45,54 @@ else:
     _base = datetime.now(ZoneInfo("Europe/Madrid"))
 hoy = _base.strftime("%A %d de %B de %Y")
 
+UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36"
+
+
+def fetch_scorers_text(tiers=3, per_tier=10):
+    """Tabla de goleadores autoritativa (feed de Marca / Unidad Editorial), agrupada por
+    número de goles. Devuelve un texto para inyectar en el prompt, o None si falla."""
+    try:
+        r = requests.get(
+            "https://api.unidadeditorial.es/sports/v1/player-total-rank"
+            "/sport/01/tournament/0117/season/2025/sort/goals",
+            params={"site": 2}, headers={"User-Agent": UA}, timeout=15)
+        rank = r.json().get("data", {}).get("rank", [])
+    except Exception:
+        return None
+    groups = {}
+    for p in rank:
+        g = p.get("goals", 0)
+        if g and p.get("knownName"):
+            groups.setdefault(g, []).append(f"{p['knownName']} ({p.get('teamName', '')})")
+    if not groups:
+        return None
+    lines = []
+    for g in sorted(groups, reverse=True)[:tiers]:
+        names = groups[g]
+        shown = ", ".join(names[:per_tier])
+        if len(names) > per_tier:
+            shown += ", entre otros"
+        lines.append(f"{g} goles: {shown}")
+    return "\n".join(lines)
+
+
+_scorers = fetch_scorers_text()
+if _scorers:
+    GOLEADORES_SRC = ("Goleadores: usa EXACTAMENTE estos datos verificados (NO busques por tu "
+                      "cuenta ni cambies los números), agrupados por número de goles. Formatéalos "
+                      "según la plantilla del final añadiendo la bandera de cada país:\n" + _scorers)
+else:
+    GOLEADORES_SRC = ("Goleadores: la tabla de máximos goleadores ACTUALIZADA a hoy, después de los "
+                      "partidos de ayer. Verifica al líder y su número con DOS fuentes; no uses tablas "
+                      "de hace días. Ordena de más a menos goles.")
+
 PROMPT = """Eres un bot que prepara el resumen diario del Mundial de fútbol en curso. Hoy es __HOY__ (hora de Madrid, CEST).
 
 Busca en la web y verifica con al menos dos fuentes (web oficial FIFA y un medio deportivo grande):
 1. Próximo partido de ESPAÑA: día, hora en CEST y rival de su siguiente encuentro, más su posición actual en el grupo.
 2. Resultados de AYER: partidos terminados con marcador final y un dato breve.
 3. Partidos de HOY: enfrentamientos con hora de inicio en CEST y fase/grupo.
-4. Goleadores: la tabla de máximos goleadores ACTUALIZADA a hoy (__HOY__), después de los partidos de ayer. Busca la versión más reciente y verifica al líder y su número de goles con DOS fuentes; no uses tablas de hace días. Ordena de más a menos goles.
+4. __GOLEADORES_SRC__
 
 Reglas de datos:
 - Nunca inventes marcadores ni horarios. Da el marcador de ayer solo si está confirmado.
@@ -108,7 +149,7 @@ Reglas de formato:
 CRÍTICO: no narres tu proceso ni escribas una sola palabra de explicación. Tu respuesta debe EMPEZAR directamente por la línea ===MENSAJE=== (sin nada antes) y TERMINAR con ===FIN===. Entre medias, solo el mensaje.
 ===MENSAJE===
 (aquí el mensaje)
-===FIN===""".replace("__HOY__", hoy)
+===FIN===""".replace("__HOY__", hoy).replace("__GOLEADORES_SRC__", GOLEADORES_SRC)
 
 client = anthropic.Anthropic()  # lee ANTHROPIC_API_KEY del entorno
 resp = client.messages.create(
@@ -138,7 +179,7 @@ if not message:
 # Nunca se inventa una URL ni se bloquea el envío: si algo falla, el partido va sin enlace.
 YT_API_KEY = os.environ.get("YOUTUBE_API_KEY", "").strip()
 SOCS = "CAISEwgDEgk0ODE3Nzk3MjQaAmVuIAEaBgiA_LyaBg"  # cookie para esquivar el muro de consentimiento
-UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36"
+# UA se define arriba (junto a fetch_scorers_text).
 
 
 def _norm(s):
