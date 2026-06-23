@@ -132,15 +132,18 @@ def fetch_matches():
 
 _ayer, _hoy = fetch_matches()
 if _ayer:
-    AYER_SRC = ("Resultados de AYER: usa EXACTAMENTE estos partidos y marcadores verificados (no "
-                "busques otros ni cambies marcadores). Traduce los nombres al español (p.ej. New "
-                "Zealand -> Nueva Zelanda). Puedes añadir un dato real de color por partido:\n" + _ayer)
+    AYER_SRC = ("Resultados de AYER. Esta lista trae partidos con marcador YA VERIFICADO; úsalos tal "
+                "cual (traduce los nombres al español, p.ej. New Zealand -> Nueva Zelanda; NO cambies "
+                "los marcadores). La lista puede estar INCOMPLETA: añade además cualquier OTRO partido "
+                "del Mundial jugado ayer que no aparezca, buscando y confirmando su marcador (no "
+                "dupliques los ya listados). Un dato real de color por partido:\n" + _ayer)
 else:
-    AYER_SRC = "Resultados de AYER: partidos terminados con marcador final (confirmado) y un dato breve."
+    AYER_SRC = "Resultados de AYER: partidos terminados con marcador final (confirmado por búsqueda) y un dato breve."
 if _hoy:
-    HOY_SRC = ("Partidos de HOY: usa EXACTAMENTE estos enfrentamientos y horas verificados (traduce "
-               "los nombres al español). Los marcados '(jugado)' ya terminaron; el resto, con su hora "
-               "CEST:\n" + _hoy)
+    HOY_SRC = ("Partidos de HOY. Esta lista trae enfrentamientos y horas YA VERIFICADOS; úsalos tal "
+               "cual (traduce los nombres al español). Los marcados '(jugado)' ya terminaron. La lista "
+               "puede estar INCOMPLETA: añade además cualquier OTRO partido de hoy que falte, con su "
+               "hora CEST confirmada por búsqueda (no dupliques):\n" + _hoy)
 else:
     HOY_SRC = "Partidos de HOY: enfrentamientos con hora de inicio en CEST y fase/grupo."
 
@@ -153,7 +156,7 @@ Busca en la web y verifica con al menos dos fuentes (web oficial FIFA y un medio
 4. __GOLEADORES_SRC__
 
 Reglas de datos:
-- Los marcadores y los partidos vienen ya verificados arriba: úsalos tal cual, no inventes ni cambies ningún resultado ni hora.
+- Marcadores: los de las listas verificadas, úsalos tal cual sin cambiarlos. Los partidos que añadas tú para completar, confirma su marcador por búsqueda y NUNCA lo inventes (si no lo confirmas, omite ese partido).
 - La info de clasificación (quién está eliminado, quién se ha clasificado, qué necesita cada selección, contra quién juega en la última jornada) es lo más interesante: inclúyela cuando puedas. Pero ANTES consulta la clasificación real del grupo y el calendario en una fuente, y básate solo en esos datos verificados, no en deducciones de memoria. Si la situación es matemáticamente clara (un equipo ya eliminado o ya clasificado), dilo con seguridad. Si depende de combinaciones o desempates complejos, mantente general ("se juega el pase en la última jornada") sin afirmar detalles que no hayas confirmado. Nunca inventes marcador, rival ni escenario.
 - Si un partido está EN JUEGO ahora mismo (en directo, sin resultado final), NO des marcador parcial ni hables de fuentes ni de incertidumbre. Trátalo como un partido más: di que está en juego y añade un comentario breve de qué se juega cada selección, igual que con los de hoy.
 - Si de un bloque entero no hay datos fiables, omítelo sin más.
