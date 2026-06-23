@@ -20,7 +20,7 @@ import os
 import re
 import sys
 import unicodedata
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 import requests
@@ -86,16 +86,74 @@ else:
                       "partidos de ayer. Verifica al líder y su número con DOS fuentes; no uses tablas "
                       "de hace días. Ordena de más a menos goles.")
 
+
+def fetch_matches():
+    """Partidos reales de TheSportsDB (liga 4429, Mundial). Devuelve (ayer, hoy) como texto
+    con marcadores y horas verificados, o (None, None) si falla. Nombres en inglés (el modelo
+    los traduce). 'ayer' = partidos terminados del día anterior; 'hoy' = los de hoy."""
+    madrid = ZoneInfo("Europe/Madrid")
+    base = datetime.now(madrid)
+    today, yesterday = base.date(), base.date() - timedelta(days=1)
+    evs, seen = [], set()
+    for off in (-1, 0, 1):  # 3 días UTC para cubrir desfases de zona horaria
+        d = (base.astimezone(timezone.utc) + timedelta(days=off)).strftime("%Y-%m-%d")
+        try:
+            r = requests.get("https://www.thesportsdb.com/api/v1/json/3/eventsday.php",
+                             params={"d": d, "s": "Soccer"}, headers={"User-Agent": UA}, timeout=15)
+            for e in (r.json().get("events") or []):
+                i = e.get("idEvent")
+                if e.get("idLeague") == "4429" and i and i not in seen:
+                    seen.add(i)
+                    evs.append(e)
+        except Exception:
+            continue
+    if not evs:
+        return None, None
+    ayer, hoy = [], []
+    for e in evs:
+        ts = e.get("strTimestamp") or ""
+        try:
+            dt = datetime.fromisoformat(ts.replace("Z", "")).replace(tzinfo=timezone.utc).astimezone(madrid)
+        except Exception:
+            continue
+        home, away = e.get("strHomeTeam"), e.get("strAwayTeam")
+        hs, as_ = e.get("intHomeScore"), e.get("intAwayScore")
+        if not home or not away:
+            continue
+        played = hs is not None and as_ is not None
+        if dt.date() == yesterday and played:
+            ayer.append(f"{home} {hs}-{as_} {away}")
+        elif dt.date() == today:
+            hhmm = dt.strftime("%H:%M")
+            hoy.append(f"{home} {hs}-{as_} {away} (jugado)" if played
+                       else f"{home} vs {away} ({hhmm} CEST)")
+    return ("\n".join(ayer) or None), ("\n".join(hoy) or None)
+
+
+_ayer, _hoy = fetch_matches()
+if _ayer:
+    AYER_SRC = ("Resultados de AYER: usa EXACTAMENTE estos partidos y marcadores verificados (no "
+                "busques otros ni cambies marcadores). Traduce los nombres al español (p.ej. New "
+                "Zealand -> Nueva Zelanda). Puedes añadir un dato real de color por partido:\n" + _ayer)
+else:
+    AYER_SRC = "Resultados de AYER: partidos terminados con marcador final (confirmado) y un dato breve."
+if _hoy:
+    HOY_SRC = ("Partidos de HOY: usa EXACTAMENTE estos enfrentamientos y horas verificados (traduce "
+               "los nombres al español). Los marcados '(jugado)' ya terminaron; el resto, con su hora "
+               "CEST:\n" + _hoy)
+else:
+    HOY_SRC = "Partidos de HOY: enfrentamientos con hora de inicio en CEST y fase/grupo."
+
 PROMPT = """Eres un bot que prepara el resumen diario del Mundial de fútbol en curso. Hoy es __HOY__ (hora de Madrid, CEST).
 
 Busca en la web y verifica con al menos dos fuentes (web oficial FIFA y un medio deportivo grande):
 1. ESPAÑA: día, hora en CEST y rival de su próximo partido, su posición actual en el grupo, y (con una búsqueda específica) una anécdota o curiosidad RECIENTE (últimas 24-48 h) del entorno de la Selección (entrenamiento, rueda de prensa, ambiente, logística, lesiones, declaraciones) en prensa deportiva fiable (Marca, AS, RFEF, Mundo Deportivo, Sport).
-2. Resultados de AYER: partidos terminados con marcador final y un dato breve.
-3. Partidos de HOY: enfrentamientos con hora de inicio en CEST y fase/grupo.
+2. __AYER_SRC__
+3. __HOY_SRC__
 4. __GOLEADORES_SRC__
 
 Reglas de datos:
-- Nunca inventes marcadores ni horarios. Da el marcador de ayer solo si está confirmado.
+- Los marcadores y los partidos vienen ya verificados arriba: úsalos tal cual, no inventes ni cambies ningún resultado ni hora.
 - La info de clasificación (quién está eliminado, quién se ha clasificado, qué necesita cada selección, contra quién juega en la última jornada) es lo más interesante: inclúyela cuando puedas. Pero ANTES consulta la clasificación real del grupo y el calendario en una fuente, y básate solo en esos datos verificados, no en deducciones de memoria. Si la situación es matemáticamente clara (un equipo ya eliminado o ya clasificado), dilo con seguridad. Si depende de combinaciones o desempates complejos, mantente general ("se juega el pase en la última jornada") sin afirmar detalles que no hayas confirmado. Nunca inventes marcador, rival ni escenario.
 - Si un partido está EN JUEGO ahora mismo (en directo, sin resultado final), NO des marcador parcial ni hables de fuentes ni de incertidumbre. Trátalo como un partido más: di que está en juego y añade un comentario breve de qué se juega cada selección, igual que con los de hoy.
 - Si de un bloque entero no hay datos fiables, omítelo sin más.
@@ -151,7 +209,8 @@ Reglas de formato:
 CRÍTICO: no narres tu proceso ni escribas una sola palabra de explicación. Tu respuesta debe EMPEZAR directamente por la línea ===MENSAJE=== (sin nada antes) y TERMINAR con ===FIN===. Entre medias, solo el mensaje.
 ===MENSAJE===
 (aquí el mensaje)
-===FIN===""".replace("__HOY__", hoy).replace("__GOLEADORES_SRC__", GOLEADORES_SRC)
+===FIN===""".replace("__HOY__", hoy).replace("__GOLEADORES_SRC__", GOLEADORES_SRC) \
+    .replace("__AYER_SRC__", AYER_SRC).replace("__HOY_SRC__", HOY_SRC)
 
 client = anthropic.Anthropic()  # lee ANTHROPIC_API_KEY del entorno
 resp = client.messages.create(
