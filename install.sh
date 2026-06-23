@@ -1,12 +1,11 @@
 #!/bin/bash
-# Instalador del bot del Mundial (Telegram) en el Mac mini, host siempre encendido.
-# Monta SOLO el job diario con launchd. Telegram no necesita bridge ni procesos extra.
+# Instalador del bot del Mundial (Telegram). Monta el envío diario con launchd.
 #
 # Uso:
-#   bash ~/.claude/jobs/install-mac-mini.sh [HORA] [MINUTO]
-# Ej:  bash ~/.claude/jobs/install-mac-mini.sh 7 30     (envío diario a las 07:30)
+#   bash ~/.claude/jobs/install.sh [HORA] [MINUTO]
+# Ej:  bash ~/.claude/jobs/install.sh 7 30     (envío diario a las 07:30)
 #
-# Requisitos previos en el mini:
+# Requisitos previos:
 #   - uv instalado
 #   - ~/.claude/jobs/ con los scripts y fifa-bot.env relleno
 #     (BOT_SCRIPT=fifa-bot-telegram.py, TELEGRAM_CHAT_ID, TELEGRAM_BOT_TOKEN, ANTHROPIC_API_KEY)
@@ -56,5 +55,5 @@ echo
 echo "Prueba el envío ahora mismo con:  launchctl start com.ramon.fifabot"
 echo "Logs:  $JOBS_DIR/fifa-bot.out.log  y  fifa-bot.err.log"
 echo
-echo "IMPORTANTE: evita que el mini se duerma para que dispare a su hora:"
+echo "IMPORTANTE: evita que la máquina se duerma para que dispare a su hora:"
 echo "  sudo pmset -a sleep 0 disksleep 0 womp 1"

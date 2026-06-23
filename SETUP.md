@@ -1,7 +1,7 @@
 # Despliegue del bot (host siempre encendido)
 
-El bot publica solo cada mañana. Necesita una máquina encendida a esa hora (un Mac de
-sobremesa, un mini, lo que sea). Estos son los pasos para dejarlo corriendo.
+El bot publica solo cada mañana. Necesita una máquina encendida a esa hora. Estos son los
+pasos para dejarlo corriendo.
 
 ## 1. Prerrequisitos
 
@@ -38,7 +38,7 @@ El `.env` no se versiona (está en `.gitignore`): vive solo en cada máquina.
 ## 4. Instalar el envío diario
 
 ```bash
-bash ~/.claude/jobs/install-mac-mini.sh 7 30      # hora del envío (7:30)
+bash ~/.claude/jobs/install.sh 7 30      # hora del envío (7:30)
 ```
 
 ## 5. Probar y evitar que se duerma
@@ -54,4 +54,4 @@ Logs en `~/.claude/jobs/fifa-bot.out.log` y `fifa-bot.err.log`.
 
 - **Desplegar cambios:** se hace `git push` desde donde edites. La máquina hace `git pull`
   sola antes de cada envío, así que no hay que tocarla.
-- **Cambiar la hora:** `bash install-mac-mini.sh 8 30` (regenera y recarga el job).
+- **Cambiar la hora:** `bash install.sh 8 30` (regenera y recarga el job).
