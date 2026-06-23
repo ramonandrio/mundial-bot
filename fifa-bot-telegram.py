@@ -88,39 +88,37 @@ else:
 
 
 def fetch_matches():
-    """Partidos reales de TheSportsDB (liga 4429, Mundial). Devuelve (ayer, hoy) como texto
-    con marcadores y horas verificados, o (None, None) si falla. Nombres en inglés (el modelo
-    los traduce). 'ayer' = partidos terminados del día anterior; 'hoy' = los de hoy."""
+    """Partidos reales del Mundial desde football-data.org (fuente completa y verificada).
+    Devuelve (ayer, hoy) como texto con marcadores y horas, o (None, None) si falla.
+    Nombres en inglés (el modelo los traduce). 'ayer' = terminados del día anterior; 'hoy' = los de hoy."""
+    key = os.environ.get("FOOTBALL_DATA_KEY", "").strip()
+    if not key:
+        return None, None
     madrid = ZoneInfo("Europe/Madrid")
     base = datetime.now(madrid)
     today, yesterday = base.date(), base.date() - timedelta(days=1)
-    evs, seen = [], set()
-    for off in (-1, 0, 1):  # 3 días UTC para cubrir desfases de zona horaria
-        d = (base.astimezone(timezone.utc) + timedelta(days=off)).strftime("%Y-%m-%d")
-        try:
-            r = requests.get("https://www.thesportsdb.com/api/v1/json/3/eventsday.php",
-                             params={"d": d, "s": "Soccer"}, headers={"User-Agent": UA}, timeout=15)
-            for e in (r.json().get("events") or []):
-                i = e.get("idEvent")
-                if e.get("idLeague") == "4429" and i and i not in seen:
-                    seen.add(i)
-                    evs.append(e)
-        except Exception:
-            continue
-    if not evs:
+    dfrom = (base - timedelta(days=1)).strftime("%Y-%m-%d")
+    dto = (base + timedelta(days=1)).strftime("%Y-%m-%d")
+    try:
+        r = requests.get("https://api.football-data.org/v4/competitions/WC/matches",
+                         params={"dateFrom": dfrom, "dateTo": dto},
+                         headers={"X-Auth-Token": key}, timeout=20)
+        ms = r.json().get("matches", [])
+    except Exception:
         return None, None
     ayer, hoy = [], []
-    for e in evs:
-        ts = e.get("strTimestamp") or ""
+    for m in ms:
         try:
-            dt = datetime.fromisoformat(ts.replace("Z", "")).replace(tzinfo=timezone.utc).astimezone(madrid)
+            dt = datetime.fromisoformat(m["utcDate"].replace("Z", "+00:00")).astimezone(madrid)
         except Exception:
             continue
-        home, away = e.get("strHomeTeam"), e.get("strAwayTeam")
-        hs, as_ = e.get("intHomeScore"), e.get("intAwayScore")
+        home = (m.get("homeTeam") or {}).get("name")
+        away = (m.get("awayTeam") or {}).get("name")
+        ft = (m.get("score") or {}).get("fullTime") or {}
+        hs, as_ = ft.get("home"), ft.get("away")
         if not home or not away:
             continue
-        played = hs is not None and as_ is not None
+        played = m.get("status") == "FINISHED" and hs is not None and as_ is not None
         if dt.date() == yesterday and played:
             ayer.append(f"{home} {hs}-{as_} {away}")
         elif dt.date() == today:
@@ -132,18 +130,15 @@ def fetch_matches():
 
 _ayer, _hoy = fetch_matches()
 if _ayer:
-    AYER_SRC = ("Resultados de AYER. Esta lista trae partidos con marcador YA VERIFICADO; úsalos tal "
-                "cual (traduce los nombres al español, p.ej. New Zealand -> Nueva Zelanda; NO cambies "
-                "los marcadores). La lista puede estar INCOMPLETA: añade además cualquier OTRO partido "
-                "del Mundial jugado ayer que no aparezca, buscando y confirmando su marcador (no "
-                "dupliques los ya listados). Un dato real de color por partido:\n" + _ayer)
+    AYER_SRC = ("Resultados de AYER (lista COMPLETA y verificada; no añadas ni quites partidos, no "
+                "cambies marcadores). Traduce los nombres al español (p.ej. New Zealand -> Nueva "
+                "Zelanda). Un dato real de color por partido:\n" + _ayer)
 else:
     AYER_SRC = "Resultados de AYER: partidos terminados con marcador final (confirmado por búsqueda) y un dato breve."
 if _hoy:
-    HOY_SRC = ("Partidos de HOY. Esta lista trae enfrentamientos y horas YA VERIFICADOS; úsalos tal "
-               "cual (traduce los nombres al español). Los marcados '(jugado)' ya terminaron. La lista "
-               "puede estar INCOMPLETA: añade además cualquier OTRO partido de hoy que falte, con su "
-               "hora CEST confirmada por búsqueda (no dupliques):\n" + _hoy)
+    HOY_SRC = ("Partidos de HOY (lista COMPLETA y verificada; no añadas ni quites partidos). Traduce "
+               "los nombres al español. Los marcados '(jugado)' ya terminaron; el resto, con su hora "
+               "CEST:\n" + _hoy)
 else:
     HOY_SRC = "Partidos de HOY: enfrentamientos con hora de inicio en CEST y fase/grupo."
 
@@ -156,7 +151,7 @@ Busca en la web y verifica con al menos dos fuentes (web oficial FIFA y un medio
 4. __GOLEADORES_SRC__
 
 Reglas de datos:
-- Marcadores: los de las listas verificadas, úsalos tal cual sin cambiarlos. Los partidos que añadas tú para completar, confirma su marcador por búsqueda y NUNCA lo inventes (si no lo confirmas, omite ese partido).
+- Marcadores y partidos: vienen de una fuente completa y verificada. Úsalos tal cual, no inventes ni cambies ningún resultado ni hora, y no añadas partidos que no estén en las listas.
 - La info de clasificación (quién está eliminado, quién se ha clasificado, qué necesita cada selección, contra quién juega en la última jornada) es lo más interesante: inclúyela cuando puedas. Pero ANTES consulta la clasificación real del grupo y el calendario en una fuente, y básate solo en esos datos verificados, no en deducciones de memoria. Si la situación es matemáticamente clara (un equipo ya eliminado o ya clasificado), dilo con seguridad. Si depende de combinaciones o desempates complejos, mantente general ("se juega el pase en la última jornada") sin afirmar detalles que no hayas confirmado. Nunca inventes marcador, rival ni escenario.
 - Si un partido está EN JUEGO ahora mismo (en directo, sin resultado final), NO des marcador parcial ni hables de fuentes ni de incertidumbre. Trátalo como un partido más: di que está en juego y añade un comentario breve de qué se juega cada selección, igual que con los de hoy.
 - Si de un bloque entero no hay datos fiables, omítelo sin más.
